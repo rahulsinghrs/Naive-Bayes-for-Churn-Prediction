@@ -1,0 +1,86 @@
+---
+title: "Classification using Naive Bayes"
+author: "Rahul Singh"
+date: "1/15/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+telecom_data <- read.csv("~/Desktop/IE MBD Term2/Marketing Intelligence/Churn Prediction in Telecom Industry/Churn_new.csv")
+```
+
+```{r}
+telecom_data<-telecom_data[-1]
+str(telecom_data)
+```
+
+```{r}
+table(telecom_data$churn_decision) 
+```
+
+
+```{r}
+#creating test and train dataset
+telecom_train <- telecom_data[1:5600, ]
+telecom_test  <- telecom_data[5601:7032, ]
+```
+
+```{r}
+telecom_train_labels <- telecom_data[1:5600, ]$churn_decision
+telecom_test_labels  <- telecom_data[5601:7032, ]$churn_decision
+#1150 train, rest to test; rough 80/20 split
+
+```
+
+```{r}
+#to see if the data is evenly split
+prop.table(table(telecom_train_labels))
+prop.table(table(telecom_test_labels))
+#we observe that our data is evenly split
+```
+
+
+The result will be two character type matrixes, each with cells indicating "Yes" or "No" for whether the word represented by the column appears at any point in the message represented by the row.
+
+Training the model using e1071 package of Naive Bayes
+```{r}
+library(e1071)
+telecom_classifier <- naiveBayes(telecom_train, telecom_train_labels)
+#naiveBayes(training dataframe, factor vector for classification,laplace is 0 by default); this function return a naive Bayes model object to be used for predictions
+
+telecom_test_pred <- predict(telecom_classifier, telecom_test)
+#this prediction function takes in predict(model data used for training, test data frame, type ="class" or "raw" define if the data is classified or listed as probabilities)
+```
+
+Confusion Matrix: Checking Model Performance
+```{r}
+library(gmodels)
+CrossTable(telecom_test_pred, telecom_test_labels,
+    prop.chisq = FALSE, prop.t = FALSE,
+    dnn = c('predicted', 'actual'))
+
+#0.69% error in test
+```
+
+Looking at the table we observe that there are only 10 + 0 =19 of the 1432 customers left the company
+
+Improving the model by putting laplace value as 1
+```{r}
+telecom_classifier2 <- naiveBayes(telecom_train, telecom_train_labels, laplace = 1)
+telecom_test_pred2 <- predict(telecom_classifier2, telecom_test)
+CrossTable(telecom_test_pred2, telecom_test_labels,
+    prop.chisq = FALSE, prop.t = FALSE, prop.r = FALSE,
+    dnn = c('predicted', 'actual'))
+#this marginally reduces the error
+```
+
+In this case we observe that laplace is helping us marginally to achieve higher accuracy of the model.
+
+*Conclusion:* We can predict customer churn with high level of accuracy given the kind of dataset provided to us. 
